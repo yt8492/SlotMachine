@@ -40,7 +40,7 @@ class MainActivity : Activity(), Runnable {
     private var canTouch =true
     private var canWrite = true
     private var thread: Thread? = Thread(this)
-    private var slotArray = arrayOf(Pair(false, 0), Pair(false, 0), Pair(false, 0), Pair(false, 0))
+    private val slotArray = arrayOf(Pair(false, 0), Pair(false, 0), Pair(false, 0), Pair(false, 0))
     private var touchCnt = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +57,6 @@ class MainActivity : Activity(), Runnable {
                     slotArray[i] = Pair(true, Random().nextInt(10))
                 }
                 log("ButtonC")
-                setSegmentValue()
                 slotRunning = true
             }
         }
@@ -70,8 +69,6 @@ class MainActivity : Activity(), Runnable {
                     }
                 }
                 log("ButtonB")
-                setSegmentValue()
-                checkSlotResult()
                 slotRunning = false
             }
         }
@@ -84,10 +81,8 @@ class MainActivity : Activity(), Runnable {
                     if (slotArray[i].first) {
                         slotArray[i] = Pair(false, slotArray[i].second)
                         log("ButtonA")
-                        setSegmentValue()
                         if (i == slotArray.lastIndex) {
                             slotRunning = false
-                            checkSlotResult()
                         }
                         break
                     }
@@ -136,6 +131,8 @@ class MainActivity : Activity(), Runnable {
                 }
                 log("Thread")
                 setSegmentValue()
+            } else {
+                checkSlotResult()
             }
             Thread.sleep(125)
         }
