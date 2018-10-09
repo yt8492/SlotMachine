@@ -31,48 +31,12 @@ import java.util.*
  */
 class MainActivity : Activity(), Runnable {
 
-    private val segment = RainbowHat.openDisplay()
-    private val buttonA = RainbowHat.openButtonA()
-    private val buttonB = RainbowHat.openButtonB()
-    private val buttonC = RainbowHat.openButtonC()
-    private val ledStrip = RainbowHat.openLedStrip()
-    private var slotRunning = false
-    private var canTouch =true
-    private var canWrite = true
-    private var thread: Thread? = Thread(this)
-    private val slotArray = arrayOf(Pair(false, 0), Pair(false, 0), Pair(false, 0), Pair(false, 0))
-    private var touchCnt = 0
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        thread?.start()
-        segment.setBrightness((Ht16k33.HT16K33_BRIGHTNESS_MAX))
-        setSegmentValue()
-        segment.setEnabled(true)
-        buttonC.setOnButtonEventListener { _, _ ->
-            log("touch C")
-            if (!slotRunning) {
-                for (i in slotArray.indices) {
-                    slotArray[i] = Pair(true, Random().nextInt(10))
-                }
-                log("ButtonC")
-                slotRunning = true
-            }
-        }
-        buttonB.setOnButtonEventListener { _, _ ->
-            log("touch B")
-            if (slotRunning && canTouch) {
-                for (i in slotArray.indices) {
-                    if (slotArray[i].first) {
-                        slotArray[i] = Pair(false, Random().nextInt(10))
-                    }
-                }
-                log("ButtonB")
-                slotRunning = false
-            }
-        }
-        buttonA.setOnButtonEventListener { _, _ ->
+    private val segment = RainbowHat.openDisplay().apply {
+        setBrightness((Ht16k33.HT16K33_BRIGHTNESS_MAX))
+        setEnabled(true)
+    }
+    private val buttonA = RainbowHat.openButtonA().apply {
+        setOnButtonEventListener { _, _ ->
             log("touch A")
             touchCnt++
             if (slotRunning && touchCnt % 2 == 1 && canTouch) {
@@ -91,6 +55,48 @@ class MainActivity : Activity(), Runnable {
             }
         }
     }
+    private val buttonB = RainbowHat.openButtonB().apply {
+        setOnButtonEventListener { _, _ ->
+            log("touch B")
+            if (slotRunning && canTouch) {
+                for (i in slotArray.indices) {
+                    if (slotArray[i].first) {
+                        slotArray[i] = Pair(false, Random().nextInt(10))
+                    }
+                }
+                log("ButtonB")
+                slotRunning = false
+            }
+        }
+    }
+    private val buttonC = RainbowHat.openButtonC().apply {
+        setOnButtonEventListener { _, _ ->
+            log("touch C")
+            if (!slotRunning) {
+                for (i in slotArray.indices) {
+                    slotArray[i] = Pair(true, Random().nextInt(10))
+                }
+                log("ButtonC")
+                slotRunning = true
+            }
+        }
+    }
+    private val ledStrip = RainbowHat.openLedStrip().apply {
+        brightness = 1
+    }
+    private var slotRunning = false
+    private var canTouch =true
+    private var canWrite = true
+    private var thread: Thread? = Thread(this)
+    private val slotArray = arrayOf(Pair(false, 0), Pair(false, 0), Pair(false, 0), Pair(false, 0))
+    private var touchCnt = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        thread?.start()
+        setSegmentValue()
+    }
 
     private fun setSegmentValue() {
         if (canWrite) {
@@ -106,10 +112,7 @@ class MainActivity : Activity(), Runnable {
     }
 
     private fun checkSlotResult() {
-        if (slotArray[0] == slotArray[1] &&
-                slotArray[1] ==slotArray[2] &&
-                 slotArray[2] == slotArray[3]) {
-            ledStrip.brightness = 1
+        if (slotArray.all { it == slotArray.first() }) {
             val rainbow = IntArray(RainbowHat.LEDSTRIP_LENGTH)
             for (i in rainbow.indices) {
                 rainbow[i] = Color.HSVToColor(127, floatArrayOf(i * 360f / rainbow.size, 1f, 1f))
