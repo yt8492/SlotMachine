@@ -31,58 +31,68 @@ import java.util.*
  */
 class MainActivity : Activity(), Runnable {
 
-    private val segment = RainbowHat.openDisplay().apply {
-        setBrightness((Ht16k33.HT16K33_BRIGHTNESS_MAX))
-        setEnabled(true)
+    private val segment by lazy {
+        RainbowHat.openDisplay().apply {
+            setBrightness((Ht16k33.HT16K33_BRIGHTNESS_MAX))
+            setEnabled(true)
+        }
     }
-    private val buttonA = RainbowHat.openButtonA().apply {
-        setOnButtonEventListener { _, _ ->
-            log("touch A")
-            touchCnt++
-            if (slotRunning && touchCnt % 2 == 1 && canTouch) {
-                canTouch = false
-                for (i in slotArray.indices) {
-                    if (slotArray[i].first) {
-                        slotArray[i] = Pair(false, slotArray[i].second)
-                        log("ButtonA")
-                        if (i == slotArray.lastIndex) {
-                            slotRunning = false
+    private val buttonA by lazy {
+        RainbowHat.openButtonA().apply {
+            setOnButtonEventListener { _, _ ->
+                log("touch A")
+                touchCnt++
+                if (slotRunning && touchCnt % 2 == 1 && canTouch) {
+                    canTouch = false
+                    for (i in slotArray.indices) {
+                        if (slotArray[i].first) {
+                            slotArray[i] = Pair(false, slotArray[i].second)
+                            log("ButtonA")
+                            if (i == slotArray.lastIndex) {
+                                slotRunning = false
+                            }
+                            break
                         }
-                        break
                     }
+                    canTouch = true
                 }
-                canTouch = true
             }
         }
     }
-    private val buttonB = RainbowHat.openButtonB().apply {
-        setOnButtonEventListener { _, _ ->
-            log("touch B")
-            if (slotRunning && canTouch) {
-                for (i in slotArray.indices) {
-                    if (slotArray[i].first) {
-                        slotArray[i] = Pair(false, Random().nextInt(10))
+    private val buttonB by lazy {
+        RainbowHat.openButtonB().apply {
+            setOnButtonEventListener { _, _ ->
+                log("touch B")
+                if (slotRunning && canTouch) {
+                    for (i in slotArray.indices) {
+                        if (slotArray[i].first) {
+                            slotArray[i] = Pair(false, Random().nextInt(10))
+                        }
                     }
+                    log("ButtonB")
+                    slotRunning = false
                 }
-                log("ButtonB")
-                slotRunning = false
             }
         }
     }
-    private val buttonC = RainbowHat.openButtonC().apply {
-        setOnButtonEventListener { _, _ ->
-            log("touch C")
-            if (!slotRunning) {
-                for (i in slotArray.indices) {
-                    slotArray[i] = Pair(true, Random().nextInt(10))
+    private val buttonC by lazy {
+        RainbowHat.openButtonC().apply {
+            setOnButtonEventListener { _, _ ->
+                log("touch C")
+                if (!slotRunning) {
+                    for (i in slotArray.indices) {
+                        slotArray[i] = Pair(true, Random().nextInt(10))
+                    }
+                    log("ButtonC")
+                    slotRunning = true
                 }
-                log("ButtonC")
-                slotRunning = true
             }
         }
     }
-    private val ledStrip = RainbowHat.openLedStrip().apply {
-        brightness = 1
+    private val ledStrip by lazy {
+        RainbowHat.openLedStrip().apply {
+            brightness = 1
+        }
     }
     private var slotRunning = false
     private var canTouch =true
