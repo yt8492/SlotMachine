@@ -87,13 +87,14 @@ class MainActivity : Activity(), Runnable {
     private var slotRunning = false
     private var canTouch =true
     private var canWrite = true
-    private var thread: Thread? = Thread(this)
+    private var thread: Thread? = null
     private val slotArray = arrayOf(Pair(false, 0), Pair(false, 0), Pair(false, 0), Pair(false, 0))
     private var touchCnt = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        thread = Thread(this)
         thread?.start()
         setSegmentValue()
     }
@@ -102,7 +103,7 @@ class MainActivity : Activity(), Runnable {
         if (canWrite) {
             canWrite = false
             try {
-                val displayValue = buildString { append(slotArray[0].second, slotArray[1].second, slotArray[2].second, slotArray[3].second) }
+                val displayValue = slotArray.map { it.second.toString() }.reduce { acc, i -> acc + i }
                 segment.display(displayValue)
             } catch (e: BufferUnderflowException) {
                 e.printStackTrace()
