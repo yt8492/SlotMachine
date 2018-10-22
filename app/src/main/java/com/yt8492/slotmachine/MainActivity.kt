@@ -61,7 +61,7 @@ class MainActivity : Activity(), Runnable {
             if (slotRunning && canTouch) {
                 for (i in slotArray.indices) {
                     if (slotArray[i].first) {
-                        slotArray[i] = Pair(false, Random().nextInt(10))
+                        slotArray[i] = false to Random().nextInt(10)
                     }
                 }
                 log("ButtonB")
@@ -74,7 +74,7 @@ class MainActivity : Activity(), Runnable {
             log("touch C")
             if (!slotRunning) {
                 for (i in slotArray.indices) {
-                    slotArray[i] = Pair(true, Random().nextInt(10))
+                    slotArray[i] = true to Random().nextInt(10)
                 }
                 log("ButtonC")
                 slotRunning = true
@@ -88,7 +88,7 @@ class MainActivity : Activity(), Runnable {
     private var canTouch =true
     private var canWrite = true
     private var thread: Thread? = null
-    private val slotArray = arrayOf(Pair(false, 0), Pair(false, 0), Pair(false, 0), Pair(false, 0))
+    private val slotArray = Array(4) {false to 0}
     private var touchCnt = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,7 +103,7 @@ class MainActivity : Activity(), Runnable {
         if (canWrite) {
             canWrite = false
             try {
-                val displayValue = slotArray.map { it.second.toString() }.reduce { acc, i -> acc + i }
+                val displayValue = slotArray.map { it.second }.joinToString("")
                 segment.display(displayValue)
             } catch (e: BufferUnderflowException) {
                 e.printStackTrace()
@@ -114,13 +114,10 @@ class MainActivity : Activity(), Runnable {
 
     private fun checkSlotResult() {
         if (slotArray.all { it == slotArray.first() }) {
-            val rainbow = IntArray(RainbowHat.LEDSTRIP_LENGTH)
-            for (i in rainbow.indices) {
-                rainbow[i] = Color.HSVToColor(127, floatArrayOf(i * 360f / rainbow.size, 1f, 1f))
-            }
+            val rainbow = IntArray(RainbowHat.LEDSTRIP_LENGTH){Color.HSVToColor(127, floatArrayOf(it * 360f / RainbowHat.LEDSTRIP_LENGTH, 1f, 1f))}
             ledStrip.write(rainbow)
             Thread.sleep(2000)
-            rainbow.fill(0, 0, rainbow.size)
+            rainbow.fill(0)
             ledStrip.write(rainbow)
         }
     }
@@ -130,7 +127,7 @@ class MainActivity : Activity(), Runnable {
             if (slotRunning) {
                 for (i in slotArray.indices) {
                     if (slotArray[i].first) {
-                        slotArray[i] = Pair(true, (slotArray[i].second + 1) % 10)
+                        slotArray[i] = true to (slotArray[i].second + 1) % 10
                     }
                 }
                 log("Thread")
