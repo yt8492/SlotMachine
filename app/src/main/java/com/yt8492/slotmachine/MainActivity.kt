@@ -7,7 +7,7 @@ import android.util.Log
 import com.google.android.things.contrib.driver.ht16k33.Ht16k33
 import com.google.android.things.contrib.driver.rainbowhat.RainbowHat
 import java.nio.BufferUnderflowException
-import java.util.*
+import kotlin.random.Random
 
 /**
  * Skeleton of an Android Things activity.
@@ -31,6 +31,14 @@ import java.util.*
  */
 class MainActivity : Activity(), Runnable {
 
+    data class Slot(var running: Boolean, var number: Int)
+    private var slotRunning = false
+    private var canTouch =true
+    private var canWrite = true
+    private var thread: Thread? = null
+    private val slotList = List(4){Slot(false, 0)}
+    private var touchCnt = 0
+
     private val segment by lazy {
         RainbowHat.openDisplay().apply {
             setBrightness((Ht16k33.HT16K33_BRIGHTNESS_MAX))
@@ -38,73 +46,68 @@ class MainActivity : Activity(), Runnable {
         }
     }
     private val buttonA by lazy {
-        RainbowHat.openButtonA().apply {
-            setOnButtonEventListener { _, _ ->
-                log("touch A")
-                touchCnt++
-                if (slotRunning && touchCnt % 2 == 1 && canTouch) {
-                    canTouch = false
-                    for (i in slotArray.indices) {
-                        if (slotArray[i].first) {
-                            slotArray[i] = false to slotArray[i].second
-                            log("ButtonA")
-                            if (i == slotArray.lastIndex) {
-                                slotRunning = false
-                            }
-                            break
-                        }
-                    }
-                    canTouch = true
-                }
-            }
-        }
+        RainbowHat.openButtonA()
     }
     private val buttonB by lazy {
-        RainbowHat.openButtonB().apply {
-            setOnButtonEventListener { _, _ ->
-                log("touch B")
-                if (slotRunning && canTouch) {
-                    for (i in slotArray.indices) {
-                        if (slotArray[i].first) {
-                            slotArray[i] = false to Random().nextInt(10)
-                        }
-                    }
-                    log("ButtonB")
-                    slotRunning = false
-                }
-            }
-        }
+        RainbowHat.openButtonB()
     }
     private val buttonC by lazy {
-        RainbowHat.openButtonC().apply {
-            setOnButtonEventListener { _, _ ->
-                log("touch C")
-                if (!slotRunning) {
-                    for (i in slotArray.indices) {
-                        slotArray[i] = true to Random().nextInt(10)
-                    }
-                    log("ButtonC")
-                    slotRunning = true
-                }
-            }
-        }
+        RainbowHat.openButtonC()
     }
     private val ledStrip by lazy {
         RainbowHat.openLedStrip().apply {
             brightness = 1
         }
     }
-    private var slotRunning = false
-    private var canTouch =true
-    private var canWrite = true
-    private var thread: Thread? = null
-    private val slotArray = Array(4){false to 0}
-    private var touchCnt = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         log("start activity")
+        buttonA.apply {
+            setOnButtonEventListener { _, _ ->
+                log("touch A")
+                touchCnt++
+                if (slotRunning && touchCnt % 2 == 1 && canTouch) {
+                    canTouch = false
+                    slotList.find { it.running }
+                            ?.let {
+                                it.running = false
+                                if (it == slotList.last()) {
+                                    slotRunning = false
+                                }
+                            }
+                    canTouch = true
+                }
+            }
+        }
+        buttonB.apply {
+            setOnButtonEventListener { _, _ ->
+                log("touch B")
+                if (slotRunning && canTouch) {
+                    slotList.filter { it.running }
+                            .forEach {
+                                it.running = false
+                                it.number = Random.nextInt(10)
+                            }
+                    log("ButtonB")
+                    slotRunning = false
+                }
+            }
+        }
+        buttonC.apply {
+            setOnButtonEventListener { _, _ ->
+                log("touch C")
+                if (!slotRunning) {
+                    slotList.forEach {
+                        it.running = true
+                        it.number = Random.nextInt(10)
+                    }
+                    log("ButtonC")
+                    slotRunning = true
+                }
+            }
+        }
         thread = Thread(this)
         thread?.start()
         setSegmentValue()
@@ -114,7 +117,7 @@ class MainActivity : Activity(), Runnable {
         if (canWrite) {
             canWrite = false
             try {
-                val displayValue = slotArray.map { it.second }.joinToString("")
+                val displayValue = slotList.map { it.number }.joinToString("")
                 segment.display(displayValue)
             } catch (e: BufferUnderflowException) {
                 e.printStackTrace()
@@ -124,23 +127,21 @@ class MainActivity : Activity(), Runnable {
     }
 
     private fun checkSlotResult() {
-        if (slotArray.all { it == slotArray.first() }) {
+        if (slotList.all { slotList.first() == it }) {
             val rainbow = IntArray(RainbowHat.LEDSTRIP_LENGTH){Color.HSVToColor(127, floatArrayOf(it * 360f / RainbowHat.LEDSTRIP_LENGTH, 1f, 1f))}
             ledStrip.write(rainbow)
             Thread.sleep(2000)
             rainbow.fill(0, 0, rainbow.size)
             ledStrip.write(rainbow)
+
         }
     }
 
     override fun run() {
         while (true) {
             if (slotRunning) {
-                for (i in slotArray.indices) {
-                    if (slotArray[i].first) {
-                        slotArray[i] = Pair(true, (slotArray[i].second + 1) % 10)
-                    }
-                }
+                slotList.filter { it.running }
+                        .forEach { it.number = (it.number + 1) % 10 }
                 log("Thread")
                 setSegmentValue()
             } else {
